@@ -17,10 +17,11 @@
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
     "release-notes": "node scripts/release-notes.mjs",
+    "publish-release-notes": "node scripts/publish-release-notes.mjs",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "electron-vite build && electron-builder --mac",
-    "release:mac": "npm run release-notes && electron-vite build && electron-builder --mac --publish always",
+    "release:mac": "npm run release-notes && electron-vite build && electron-builder --mac --publish always && npm run publish-release-notes",
     "build:linux": "electron-vite build && electron-builder --linux"
   },
   "dependencies": {
