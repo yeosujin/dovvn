@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FolderOpen, Settings, Sparkles, AlertCircle } from 'lucide-react'
 import { UrlInput } from './components/UrlInput'
 import { VideoInfoCard } from './components/VideoInfo'
@@ -15,7 +15,6 @@ import { PresetBar } from './components/PresetBar'
 import { Ghost } from './components/Ghost'
 import { UpdatePill } from './components/UpdatePill'
 import { WhatsNewToast } from './components/WhatsNewToast'
-import { DEV_MOCK_RELEASE_NOTES } from './lib/releaseNotes'
 import type { ReleaseNotesEntry } from '../../preload/index'
 import { useAppUpdateStore } from './stores/appUpdateStore'
 import { useDownloadEvents } from './hooks/useDownloadEvents'
@@ -77,6 +76,22 @@ function App(): React.JSX.Element {
 
   const [whatsNew, setWhatsNew] = useState<ReleaseNotesEntry | null>(null)
 
+  // 클립보드 자동 붙여넣기를 위해 최신 상태를 ref로 추적 (focus 핸들러 closure 용)
+  const autoPasteStateRef = useRef({
+    enabled: true,
+    url: '',
+    hasInfo: false,
+    loading: false,
+    lastPasted: ''
+  })
+  autoPasteStateRef.current = {
+    enabled: settings?.autoPasteClipboard ?? true,
+    url,
+    hasInfo: info !== null,
+    loading,
+    lastPasted: autoPasteStateRef.current.lastPasted
+  }
+
   useEffect(() => {
     loadSettings()
     loadPresets()
@@ -85,13 +100,30 @@ function App(): React.JSX.Element {
   }, [loadSettings, loadPresets, initAppUpdate, checkAppUpdate])
 
   useEffect(() => {
-    if (!settings || !currentVersion) return
-    // dev 모드: 항상 mock 토스트 표시 (디자인 확인용).
-    if (import.meta.env.DEV) {
-      setWhatsNew(DEV_MOCK_RELEASE_NOTES)
-      return
+    // 윈도우 포커스 시 클립보드의 URL을 입력창에 자동 붙여넣기.
+    // 입력창이 비어있고, 결과/로딩이 없을 때만 동작. 같은 URL은 두 번 안 붙임.
+    const onFocus = async (): Promise<void> => {
+      const s = autoPasteStateRef.current
+      if (!s.enabled || s.url || s.hasInfo || s.loading) return
+      try {
+        const text = (await window.api.readClipboardText()).trim()
+        if (!text || text === s.lastPasted) return
+        if (!/^https?:\/\/\S+$/i.test(text)) return
+        autoPasteStateRef.current.lastPasted = text
+        setUrl(text)
+      } catch {
+        // 무시
+      }
     }
-    // 실제: 새 버전으로 부팅했고 사용자가 아직 못 본 변경사항이 있으면 표시.
+    window.addEventListener('focus', onFocus)
+    // 첫 마운트에서 이미 포커스 상태인 경우도 한 번 실행
+    void onFocus()
+    return () => window.removeEventListener('focus', onFocus)
+  }, [])
+
+  useEffect(() => {
+    if (!settings || !currentVersion) return
+    // 새 버전으로 부팅했고 사용자가 아직 못 본 변경사항이 있으면 표시.
     if (
       settings.lastReleaseNotes &&
       settings.lastReleaseNotes.version === currentVersion &&
@@ -106,7 +138,7 @@ function App(): React.JSX.Element {
 
   const dismissWhatsNew = (): void => {
     setWhatsNew(null)
-    if (currentVersion && !import.meta.env.DEV) {
+    if (currentVersion) {
       void updateSettings({ lastSeenVersion: currentVersion })
     }
   }

@@ -55,6 +55,7 @@ export interface AppSettings {
   defaultSubFormat: SubtitleFormat
   defaultEmbedSubtitles: boolean
   completionNotify: boolean
+  autoPasteClipboard: boolean
   lastSeenVersion: string | null
   lastReleaseNotes: ReleaseNotesEntry | null
 }
@@ -128,6 +129,7 @@ function subscribe<T>(channel: string, cb: (payload: T) => void): () => void {
 }
 
 const api = {
+  readClipboardText: () => ipcRenderer.invoke('clipboard:read-text') as Promise<string>,
   fetchVideoInfo: (url: string) => ipcRenderer.invoke('video:info', url),
   startDownload: (opts: DownloadStartOptions) => ipcRenderer.invoke('download:start', opts),
   cancelDownload: (id: string) => ipcRenderer.invoke('download:cancel', id),

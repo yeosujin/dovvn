@@ -28,6 +28,8 @@ export interface AppSettings {
   defaultSubFormat: SubtitleFormat
   defaultEmbedSubtitles: boolean
   completionNotify: boolean
+  /** 앱 포커스 시 클립보드의 URL을 입력창에 자동 붙여넣을지 여부. */
+  autoPasteClipboard: boolean
   /** 사용자가 마지막으로 What's New 토스트를 본 버전. */
   lastSeenVersion: string | null
   /** 마지막으로 설치된 업데이트의 릴리즈 노트. */
@@ -50,6 +52,7 @@ function makeDefaults(): AppSettings {
     defaultSubFormat: 'srt',
     defaultEmbedSubtitles: false,
     completionNotify: true,
+    autoPasteClipboard: true,
     lastSeenVersion: null,
     lastReleaseNotes: null,
   }
@@ -139,6 +142,8 @@ export function registerSettingsIpc(): void {
       settings.defaultEmbedSubtitles = patch.defaultEmbedSubtitles
     if (typeof patch.completionNotify === 'boolean')
       settings.completionNotify = patch.completionNotify
+    if (typeof patch.autoPasteClipboard === 'boolean')
+      settings.autoPasteClipboard = patch.autoPasteClipboard
     if (patch.lastSeenVersion === null || typeof patch.lastSeenVersion === 'string')
       settings.lastSeenVersion = patch.lastSeenVersion
     if (patch.lastReleaseNotes === null || (patch.lastReleaseNotes && typeof patch.lastReleaseNotes === 'object'))

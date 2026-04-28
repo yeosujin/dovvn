@@ -8,7 +8,7 @@ import { Ghost } from './Ghost'
 import { Select, type SelectOption } from './ui/Select'
 import { Checkbox } from './ui/Checkbox'
 import { nativeLangLabel } from '../lib/lang'
-import { extractBullets, DEV_MOCK_RELEASE_NOTES } from '../lib/releaseNotes'
+import { extractBullets } from '../lib/releaseNotes'
 
 interface Props {
   open: boolean
@@ -293,6 +293,13 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
                 onChange={(v) => setField('completionNotify', v)}
               />
             </Row>
+            <Row label="자동 붙여넣기">
+              <Checkbox
+                checked={settings.autoPasteClipboard}
+                onChange={(v) => setField('autoPasteClipboard', v)}
+                label="앱 켤 때 클립보드에 있는 링크를 자동으로 채워줍니다"
+              />
+            </Row>
           </Section>
 
           <Section title="기본 다운로드 옵션">
@@ -469,13 +476,7 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
                 </span>
               )}
             </Row>
-            <ReleaseNotesRow
-              entry={
-                import.meta.env.DEV && !settings.lastReleaseNotes
-                  ? DEV_MOCK_RELEASE_NOTES
-                  : settings.lastReleaseNotes
-              }
-            />
+            <ReleaseNotesRow entry={settings.lastReleaseNotes} />
           </Section>
 
           <Section title="yt-dlp">
