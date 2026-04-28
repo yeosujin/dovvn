@@ -5,10 +5,17 @@
 빌드 시 `scripts/release-notes.mjs`가 현재 `package.json` 버전의 섹션만 추출해서
 GitHub Release 본문에 자동으로 올려요.
 
+사용자에게 노출하지 않을 내부 변경(빌드/도구 등)은 같은 버전 섹션 안에
+`### 내부` 서브섹션으로 적어두면 release notes에 포함되지 않아요.
+
 ## 2.2.2
 
 - 변경사항이 없는 업데이트에서는 안내 토스트가 더 깔끔하게 표시되도록 정리
+
+### 내부
+
 - 릴리즈 노트 자동 생성 파이프라인 추가 (CHANGELOG.md 기반)
+- electron-builder publish 후 gh release edit으로 본문 갱신하는 후처리 추가
 
 ## 2.2.1
 

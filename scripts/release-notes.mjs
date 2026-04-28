@@ -15,7 +15,8 @@ if (!existsSync(changelogPath)) {
 }
 const changelog = readFileSync(changelogPath, 'utf8')
 
-// "## <version>" 섹션의 본문(다음 "## "까지)을 추출
+// "## <version>" 섹션의 본문(다음 "## "까지)을 추출.
+// 같은 섹션 안의 "### " 서브섹션(예: "### 내부")부터는 사용자 노트에서 제외한다.
 const re = new RegExp(`(?:^|\\n)##\\s+${version.replace(/\./g, '\\.')}\\s*\\n([\\s\\S]*?)(?=\\n##\\s+|$)`)
 const m = changelog.match(re)
 
@@ -24,9 +25,11 @@ if (!m) {
   process.exit(1)
 }
 
-const body = m[1].trim()
+const sectionBody = m[1]
+const userOnly = sectionBody.split(/\n###\s+/)[0]
+const body = userOnly.trim()
 if (!body) {
-  console.error(`## ${version} 섹션이 비어 있어요.`)
+  console.error(`## ${version} 섹션에 사용자 노트가 비어 있어요.`)
   process.exit(1)
 }
 
