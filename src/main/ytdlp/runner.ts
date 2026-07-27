@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import { spawn } from 'child_process'
 import path from 'path'
+import { getSystemCaPath } from './system-ca'
 
 function binDir(): string {
   return app.isPackaged
@@ -21,13 +22,22 @@ export function getAria2cPath(): string {
 }
 
 export function runYtDlp(args: string[]) {
-  const withFfmpeg = ['--ffmpeg-location', getFfmpegPath(), ...args]
+  // 시스템 CA를 쓰려면 두 가지가 모두 필요하다. yt-dlp는 기본적으로 번들 certifi를
+  // 먼저 로드해 SSL_CERT_FILE을 무시하므로, no-certifi로 certifi를 끄고 나서야
+  // SSL_CERT_FILE이 실제로 적용된다. (사내 TLS 인터셉트 프록시 환경 대응)
+  const caPath = getSystemCaPath()
+  const caArgs = caPath ? ['--compat-options', 'no-certifi'] : []
+  const withFfmpeg = ['--ffmpeg-location', getFfmpegPath(), ...caArgs, ...args]
   // yt-dlp는 PyInstaller로 묶인 Python 바이너리. stdout이 파이프면 Python이 블록 버퍼링을 써서
   // 진행률이 몰려 나오므로 PYTHONUNBUFFERED로 라인 버퍼링을 강제한다.
   // detached: true로 새 프로세스 그룹을 만들어 취소 시 자식(ffmpeg/aria2c)까지 한 번에 죽인다.
   return spawn(getYtDlpPath(), withFfmpeg, {
     stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, PYTHONUNBUFFERED: '1' },
+    env: {
+      ...process.env,
+      PYTHONUNBUFFERED: '1',
+      ...(caPath ? { SSL_CERT_FILE: caPath } : {}),
+    },
     detached: true,
   })
 }

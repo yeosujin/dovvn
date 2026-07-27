@@ -6,6 +6,7 @@ import { registerDownloadIpc } from './ipc/download'
 import { registerSettingsIpc, initSettings } from './ipc/settings'
 import { initPresets, registerPresetsIpc } from './ipc/presets'
 import { registerUpdaterIpc } from './ytdlp/updater'
+import { initSystemCa } from './ytdlp/system-ca'
 import { registerAppUpdaterIpc } from './ipc/appUpdater'
 
 // macOS 메뉴바/Dock에 표기되는 이름. app.whenReady 이전에 호출해야 반영됨.
@@ -72,6 +73,8 @@ app.whenReady().then(() => {
 
   ipcMain.handle('clipboard:read-text', () => clipboard.readText())
 
+  // yt-dlp 워밍업(registerUpdaterIpc)보다 먼저 CA 번들을 준비해야 한다.
+  initSystemCa()
   initSettings()
   initPresets()
   registerSettingsIpc()

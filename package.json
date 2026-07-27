@@ -1,7 +1,7 @@
 {
   "name": "dovvn",
   "productName": "Dovvn",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "유령이 영상 몰래 훔쳐다 주는 다운로더",
   "main": "./out/main/index.js",
   "author": "suujin",

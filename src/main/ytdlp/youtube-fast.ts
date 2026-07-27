@@ -1,6 +1,7 @@
 // YouTube 전용 fast path. yt-dlp 바이너리 대신 Innertube API를 직접 호출해
 // 메타데이터(포맷, 자막, 플레이리스트)만 1~2회 HTTP 왕복으로 가져온다.
 // 실제 다운로드는 계속 yt-dlp가 담당한다.
+import { net } from 'electron'
 import { Innertube, UniversalCache } from 'youtubei.js'
 import type {
   PlaylistEntry,
@@ -19,7 +20,11 @@ function getInnertube(): Promise<Innertube> {
     innertubePromise = Innertube.create({
       cache: new UniversalCache(false),
       generate_session_locally: true,
-      retrieve_player: false
+      retrieve_player: false,
+      // Node 기본 fetch는 번들 CA만 신뢰해서 사내 TLS 인터셉트 프록시 환경에선 항상 실패하고
+      // yt-dlp 폴백으로 떨어진다. Electron net.fetch는 Chromium 네트워크 스택을 거치므로
+      // OS 인증서 저장소를 그대로 따른다.
+      fetch: (input, init) => net.fetch(input as RequestInfo, init)
     }).catch((err) => {
       // 다음 호출에서 재시도할 수 있도록 실패 시 캐시 제거
       innertubePromise = null
