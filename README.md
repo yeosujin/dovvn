@@ -26,6 +26,8 @@ YouTube, Vimeo, TikTok, Instagram, X, Facebook, Twitch, SoundCloud, Naver TV, Ka
 
 ## 개발
 
+브랜치·커밋·PR 규칙은 [CONTRIBUTING.md](CONTRIBUTING.md)를 참고하세요.
+
 ### Install
 
 ```bash
