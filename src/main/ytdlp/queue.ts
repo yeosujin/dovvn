@@ -26,8 +26,8 @@ export function getMaxConcurrent(): number {
   return maxConcurrent
 }
 
-// 진행 중·대기 중인 다운로드가 모두 없어질 때마다 호출된다.
-// 알림은 drain() 끝에서만 보낸다. drain()이 active를 maxConcurrent(1 이상)까지 채우므로
+// drain()이 유휴 상태로 끝날 때마다 호출된다. 이미 유휴일 때도, 연속으로도 호출될 수 있으므로 리스너는 멱등해야 한다.
+// 알림은 drain() 끝에서만 보낸다. drain() 종료 시점에는 active를 maxConcurrent(1 이상)까지 채운 뒤이므로
 // active가 비면 waiting도 비어 있고, 따라서 cancel()이 waiting 항목만 지우는 경로는 유휴 전환이 아니다.
 export function onIdle(listener: () => void): void {
   idleListeners.push(listener)

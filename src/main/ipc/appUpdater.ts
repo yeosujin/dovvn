@@ -159,7 +159,7 @@ function installDownloadedUpdate(): boolean {
     if (!canReplaceApp()) {
       send(
         'app-update:error',
-        '앱이 있는 폴더에 쓸 수 없어 업데이트를 설치하지 못했어요. 앱을 Applications 폴더로 옮긴 뒤 다시 실행해주세요.'
+        '앱이 있는 폴더에 쓸 수 없어 업데이트를 설치하지 못했어요. 앱을 Applications 폴더 등 쓸 수 있는 위치로 옮기거나 관리자에게 문의해주세요.'
       )
       return false
     }
@@ -173,7 +173,10 @@ function installDownloadedUpdate(): boolean {
     setTimeout(() => app.quit(), QUIT_DELAY_MS)
     return true
   } catch (e) {
-    send('app-update:error', `업데이트를 설치하지 못했어요: ${(e as Error).message ?? e}`)
+    send(
+      'app-update:error',
+      `업데이트를 설치하지 못했어요: ${e instanceof Error ? e.message : String(e)}`
+    )
     return false
   }
 }
