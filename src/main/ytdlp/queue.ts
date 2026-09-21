@@ -77,7 +77,13 @@ function drain(): void {
       },
     }
 
-    startDownload(entry.options, wrapped)
+    try {
+      startDownload(entry.options, wrapped)
+    } catch (e) {
+      // startDownload가 동기 예외(예: 출력 폴더 생성 실패)를 던지면 항목이 active에 남아
+      // 큐가 영영 비지 않으므로, 실패로 처리해 active에서 빼고 다음 항목으로 넘어간다.
+      wrapped.onError(e instanceof Error ? e.message : String(e))
+    }
   }
 
   if (isIdle()) idleListeners.forEach((listener) => listener())
