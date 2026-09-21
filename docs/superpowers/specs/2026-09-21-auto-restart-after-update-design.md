@@ -67,7 +67,7 @@ isRestartPending(): boolean
 - **쓰기 권한 사전 점검.** 교체 전에 `canReplaceApp()`이 앱이 있는 폴더(`Dovvn.app`의 부모)에 `W_OK`가 있는지 확인한다. 없으면 압축 해제도 하지 않고 오류를 표시한 뒤 `false`를 반환한다.
   - 이유: 클릭이 없어진 자동 재시작에서 교체 스크립트가 반복해서 실패하면, 셸 스크립트의 캐시 정리가 성공 분기에만 있어 업데이트 캐시가 남고, 앱이 다시 시작될 때마다 `update-downloaded`가 캐시에서 재발행되어 실행할 때마다 재시작이 되풀이된다.
   - 대상: `~/Downloads`에서 실행해 App Translocation의 읽기 전용 경로에서 돌 때, 관리자 권한이 없는 사용자가 `/Applications`에 설치한 경우, 읽기 전용 볼륨. macOS는 읽기 전용 마운트에서 소유자와 권한 비트가 쓰기 가능이어도 `W_OK` 검사가 `EROFS`로 실패한다.
-- `installDownloadedUpdate()`는 `!downloadedFile` 확인 이후를 try/catch로 감싸 예외도 `app-update:error`로 알리고 `false`를 반환한다. (`!downloadedFile` 분기는 `update-downloaded`에서 항상 채워지므로 정상 경로에선 도달하지 않으며, `false`를 반환해 대기 상태가 풀리게 한다.)
+- `installDownloadedUpdate()`는 본문 전체(`!downloadedFile` 확인 포함)를 try/catch로 감싸 예외도 `app-update:error`로 알리고 `false`를 반환한다. (`!downloadedFile` 분기는 `update-downloaded`에서 항상 채워지므로 정상 경로에선 도달하지 않으며, `false`를 반환해 대기 상태가 풀리게 한다.)
 - 앱 종료 지연(`QUIT_DELAY_MS`)은 1.5초다. 클릭 없이 재시작이 일어나므로 방금 끝난 다운로드의 상태가 렌더러 `localStorage`에 저장되고 안내 문구가 보일 시간을 준다. 교체 스크립트는 앱 PID가 끝나기를 최대 30초 기다리므로 지연이 있어도 안전하다.
 - `app-update:quit-and-install` IPC 핸들러, preload의 `appUpdateQuitAndInstall`, 스토어의 `install`은 제거한다. 설치 버튼(UpdatePill, 설정 패널)이 사라져 호출하는 곳이 없어지기 때문이다.
 - 렌더러 `appUpdateStore`는 `downloaded` 상태에서도 `app-update:error`를 반영한다. 이 상태에서 오는 오류는 자동 설치가 시작되지 못했다는 신호이기 때문이다. (반영하지 않으면 필이 "재시작 대기 중…"에 갇히고 이후 자동 업데이트 확인도 멈춘다.)
@@ -101,7 +101,8 @@ isRestartPending(): boolean
 ## 범위 밖 (알려진 한계)
 
 - 앱 업데이트는 `.app` 전체를 교체하므로 `yt-dlp -U`로 올려둔 yt-dlp가 번들에 들어 있던 버전으로 되돌아갈 수 있다. (`resources/bin/*`은 gitignore 대상이며 바이너리는 빌드 시점에 번들된다. `getYtDlpPath()`가 `process.resourcesPath/bin`을 가리키는 것으로 확인했다.)
-- 재시작 시점에 진행 중인 영상 정보 조회(`video:info`)는 끊긴다. 별도로 처리하지 않는다.
+- 재시작 시점에 진행 중인 영상 정보 조회(`video:info`)는 끊긴다. 이 조회도 분리 실행되는 yt-dlp를 쓰고 큐가 추적하지 않아, 유휴 판정에 잡히지 않은 채 프로세스가 잠시 고아로 남을 수 있다. 몇 초 안에 스스로 끝나므로 별도로 처리하지 않는다.
+- 자동 설치가 시작되지 못해도(앱 폴더 쓰기 불가 등) 상단 `UpdatePill`은 `error` 단계에서 아무것도 표시하지 않는다. 필이 사라지고 실패 사유는 설정 패널에서만 보인다. 스토어의 `error` 단계는 오프라인 같은 일반 업데이트 확인 오류에도 쓰이므로, 필에 오류를 그대로 표시하면 그런 경우에도 계속 나타난다. 설치 실패만 구분해 알리려면 별도 신호가 필요하며 이번에는 다루지 않았다.
 - yt-dlp 오류가 재시작 없이는 왜 발생하는지 원인 조사는 하지 않는다.
 - 쓰기 권한 사전 점검을 통과한 뒤 셸 스크립트 자체가 실패하는 경우(예: 백업 `mv` 실패, 롤백)에는 반복 재시작이 남을 수 있다. 확률은 낮고, 실패 로그는 `/tmp/dovvn-update.log`에만 남아 사용자에게 보이지 않는다. 완전히 막으려면 시도한 버전을 저장해야 하며, 이번에는 채택하지 않았다.
 - 재시작이 대기 중일 때 설정 패널에서 yt-dlp "업데이트 확인"을 다시 누르면 이미 최신이므로 "이미 최신 버전입니다"로 덮어써져 재시작 예정 안내가 사라진다. 대기 자체는 유지된다.
