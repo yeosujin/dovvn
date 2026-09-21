@@ -15,6 +15,7 @@ interface QueueEntry {
 const waiting: QueueEntry[] = []
 const active = new Map<string, QueueEntry>()
 let maxConcurrent = 3
+const idleListeners: Array<() => void> = []
 
 export function setMaxConcurrent(n: number): void {
   maxConcurrent = Math.max(1, Math.min(10, n))
@@ -23,6 +24,17 @@ export function setMaxConcurrent(n: number): void {
 
 export function getMaxConcurrent(): number {
   return maxConcurrent
+}
+
+// 진행 중·대기 중인 다운로드가 모두 없어질 때마다 호출된다.
+// 알림은 drain() 끝에서만 보낸다. drain()이 active를 maxConcurrent(1 이상)까지 채우므로
+// active가 비면 waiting도 비어 있고, 따라서 cancel()이 waiting 항목만 지우는 경로는 유휴 전환이 아니다.
+export function onIdle(listener: () => void): void {
+  idleListeners.push(listener)
+}
+
+export function isIdle(): boolean {
+  return active.size === 0 && waiting.length === 0
 }
 
 export function enqueue(entry: QueueEntry): void {
@@ -67,6 +79,8 @@ function drain(): void {
 
     startDownload(entry.options, wrapped)
   }
+
+  if (isIdle()) idleListeners.forEach((listener) => listener())
 }
 
 export function getQueueSnapshot(): { waiting: string[]; active: string[] } {
