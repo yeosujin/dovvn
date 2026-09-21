@@ -18,7 +18,6 @@ interface AppUpdateState {
   init: () => void
   check: (silent?: boolean) => Promise<void>
   download: () => Promise<void>
-  install: () => void
 }
 
 let unsubscribers: Array<() => void> = []
@@ -104,10 +103,6 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
     if (!r.ok) {
       set({ phase: 'error', message: r.error })
     }
-  },
-
-  install: () => {
-    window.api.appUpdateQuitAndInstall()
   }
 }))
 

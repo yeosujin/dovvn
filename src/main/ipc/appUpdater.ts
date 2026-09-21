@@ -5,6 +5,7 @@ import path from 'node:path'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater, type UpdateDownloadedEvent } from 'electron-updater'
 import { setLastReleaseNotes } from './settings'
+import { requestRestart } from '../restart'
 
 function normalizeReleaseNotes(notes: string | Array<{ version: string; note: string | null }> | null | undefined): string {
   if (!notes) return ''
@@ -115,6 +116,25 @@ fi
   child.unref()
 }
 
+// ad-hoc 서명 환경에선 Squirrel 자동 설치가 검증 실패하므로,
+// 외부 셸 스크립트가 앱 종료 후 /Applications/Dovvn.app을 새 버전으로 덮어쓰고 재실행한다.
+// 교체를 시작했으면 true, 업데이트 파일을 준비하지 못했으면 false를 반환한다.
+function installDownloadedUpdate(): boolean {
+  if (!downloadedFile) {
+    autoUpdater.quitAndInstall()
+    return true
+  }
+  const newAppPath = prepareNewApp(downloadedFile)
+  if (!newAppPath) {
+    send('app-update:error', '업데이트 파일을 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
+    return false
+  }
+  const pendingDir = path.dirname(downloadedFile)
+  runReplaceScript(newAppPath, pendingDir)
+  setTimeout(() => app.quit(), 300)
+  return true
+}
+
 export function registerAppUpdaterIpc(): void {
   autoUpdater.on('checking-for-update', () => send('app-update:checking'))
   autoUpdater.on('update-available', (info) => send('app-update:available', info))
@@ -132,6 +152,8 @@ export function registerAppUpdaterIpc(): void {
       })
     }
     send('app-update:downloaded', info)
+    // 진행 중인 다운로드가 있으면 끝난 뒤에, 없으면 바로 재시작한다.
+    requestRestart('app-update', installDownloadedUpdate)
   })
 
   ipcMain.handle('app:version', () => app.getVersion())
@@ -152,22 +174,5 @@ export function registerAppUpdaterIpc(): void {
     } catch (e) {
       return { ok: false as const, error: String((e as Error).message ?? e) }
     }
-  })
-
-  // ad-hoc 서명 환경에선 Squirrel 자동 설치가 검증 실패하므로,
-  // 외부 셸 스크립트가 앱 종료 후 /Applications/Dovvn.app을 새 버전으로 덮어쓰고 재실행한다.
-  ipcMain.handle('app-update:quit-and-install', () => {
-    if (!downloadedFile) {
-      autoUpdater.quitAndInstall()
-      return
-    }
-    const newAppPath = prepareNewApp(downloadedFile)
-    if (!newAppPath) {
-      send('app-update:error', '업데이트 파일을 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
-      return
-    }
-    const pendingDir = path.dirname(downloadedFile)
-    runReplaceScript(newAppPath, pendingDir)
-    setTimeout(() => app.quit(), 300)
   })
 }

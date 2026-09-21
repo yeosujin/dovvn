@@ -143,7 +143,7 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
       }),
       window.api.onAppUpdateDownloaded((info) => {
         setAppUpdateState('downloaded')
-        setAppUpdateMsg(`버전 ${info.version} 설치 준비 완료`)
+        setAppUpdateMsg(`버전 ${info.version} 준비 완료 — 곧 자동으로 재시작합니다`)
       })
     ]
     return () => unsubs.forEach((u) => u())
@@ -162,10 +162,6 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
   }
 
   const doAppUpdate = async (): Promise<void> => {
-    if (appUpdateState === 'downloaded') {
-      window.api.appUpdateQuitAndInstall()
-      return
-    }
     setAppUpdateState('checking')
     setAppUpdateMsg(null)
     const r = await window.api.appUpdateCheck()
@@ -463,7 +459,7 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
               </span>
               <button
                 onClick={doAppUpdate}
-                disabled={appUpdateState === 'checking'}
+                disabled={appUpdateState !== 'idle'}
                 className="btn-soft text-xs px-3 py-1.5"
               >
                 <RefreshCw
@@ -473,7 +469,7 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
                 {appUpdateState === 'checking'
                   ? '확인 중'
                   : appUpdateState === 'downloaded'
-                    ? '재시작하여 설치'
+                    ? '재시작 대기 중'
                     : '업데이트 확인'}
               </button>
               {appUpdateMsg && (

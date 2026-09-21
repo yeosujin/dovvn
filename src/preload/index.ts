@@ -165,7 +165,6 @@ const api = {
   appUpdateCheck: () => ipcRenderer.invoke('app-update:check') as Promise<AppUpdateCheckResult>,
   appUpdateDownload: () =>
     ipcRenderer.invoke('app-update:download') as Promise<AppUpdateDownloadResult>,
-  appUpdateQuitAndInstall: () => ipcRenderer.invoke('app-update:quit-and-install'),
   onAppUpdateChecking: (cb: () => void) => subscribe<void>('app-update:checking', cb),
   onAppUpdateAvailable: (cb: (info: AppUpdateInfo) => void) =>
     subscribe<AppUpdateInfo>('app-update:available', cb),
