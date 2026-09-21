@@ -5,6 +5,7 @@ import { detectPlatform, type Platform } from '../ytdlp/platform'
 import { cancel as cancelQueued, enqueue } from '../ytdlp/queue'
 import type { DownloadOptions } from '../ytdlp/downloader'
 import { resolveOutputDir } from './settings'
+import { isRestartPending } from '../restart'
 
 export interface StartRequest {
   id: string
@@ -56,6 +57,13 @@ export function registerDownloadIpc(): void {
     const win = BrowserWindow.fromWebContents(event.sender)
     const send = (channel: string, payload: unknown): void => {
       if (win && !win.isDestroyed()) win.webContents.send(channel, payload)
+    }
+
+    // 업데이트 적용을 위한 재시작을 기다리는 중이면 새 다운로드를 받지 않는다.
+    if (isRestartPending()) {
+      const error = '업데이트 적용을 위해 재시작 대기 중이라 다운로드를 시작할 수 없어요'
+      send('download:error', { id: opts.id, error })
+      return { ok: false as const, error }
     }
 
     enqueue({

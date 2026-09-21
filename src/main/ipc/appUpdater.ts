@@ -1,10 +1,20 @@
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, chmodSync, readdirSync, statSync, existsSync } from 'node:fs'
+import {
+  mkdtempSync,
+  writeFileSync,
+  chmodSync,
+  readdirSync,
+  statSync,
+  existsSync,
+  accessSync,
+  constants
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { autoUpdater, type UpdateDownloadedEvent } from 'electron-updater'
 import { setLastReleaseNotes } from './settings'
+import { requestRestart } from '../restart'
 
 function normalizeReleaseNotes(notes: string | Array<{ version: string; note: string | null }> | null | undefined): string {
   if (!notes) return ''
@@ -15,6 +25,9 @@ function normalizeReleaseNotes(notes: string | Array<{ version: string; note: st
 
 autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = false
+
+// 자동 재시작은 클릭 없이 일어나므로, 방금 끝난 다운로드의 상태가 저장되고 안내 문구가 보일 시간을 준다.
+const QUIT_DELAY_MS = 1_500
 
 let downloadedFile: string | null = null
 
@@ -53,8 +66,25 @@ function prepareNewApp(file: string): string | null {
   return null
 }
 
+// 실행 중인 Dovvn.app 경로. exe는 Dovvn.app/Contents/MacOS/Dovvn 이다.
+function getCurrentAppPath(): string {
+  return path.dirname(path.dirname(path.dirname(app.getPath('exe'))))
+}
+
+// 앱을 교체(mv)하려면 앱이 있는 폴더에 쓸 수 있어야 한다.
+// ~/Downloads에서 실행 중이라 읽기 전용 경로에 격리됐거나 관리자 권한이 없으면 교체가 매번 실패하고,
+// 자동 재시작에서는 실행할 때마다 같은 시도를 되풀이하게 되므로 미리 걸러낸다.
+function canReplaceApp(): boolean {
+  try {
+    accessSync(path.dirname(getCurrentAppPath()), constants.W_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
 function runReplaceScript(newAppPath: string, pendingDir: string): void {
-  const currentAppPath = path.dirname(path.dirname(path.dirname(app.getPath('exe'))))
+  const currentAppPath = getCurrentAppPath()
   const pid = process.pid
   const logPath = path.join(tmpdir(), 'dovvn-update.log')
 
@@ -115,6 +145,42 @@ fi
   child.unref()
 }
 
+// ad-hoc 서명 환경에선 Squirrel 자동 설치가 검증 실패하므로,
+// 외부 셸 스크립트가 앱 종료 후 /Applications/Dovvn.app을 새 버전으로 덮어쓰고 재실행한다.
+// 교체를 시작했으면 true, 시작하지 못했으면 false를 반환한다. 시작하지 못한 이유는 app-update:error로 알린다.
+function installDownloadedUpdate(): boolean {
+  try {
+    if (!downloadedFile) {
+      // update-downloaded에서 항상 채워지므로 정상 경로에선 도달하지 않는다.
+      // ad-hoc 서명 빌드에선 Squirrel 설치가 실패해 종료되지 않을 수 있어 대기 상태를 풀어 둔다.
+      autoUpdater.quitAndInstall()
+      return false
+    }
+    if (!canReplaceApp()) {
+      send(
+        'app-update:error',
+        '앱이 있는 폴더에 쓸 수 없어 업데이트를 설치하지 못했어요. 앱을 Applications 폴더 등 쓸 수 있는 위치로 옮기거나 관리자에게 문의해주세요.'
+      )
+      return false
+    }
+    const newAppPath = prepareNewApp(downloadedFile)
+    if (!newAppPath) {
+      send('app-update:error', '업데이트 파일을 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
+      return false
+    }
+    const pendingDir = path.dirname(downloadedFile)
+    runReplaceScript(newAppPath, pendingDir)
+    setTimeout(() => app.quit(), QUIT_DELAY_MS)
+    return true
+  } catch (e) {
+    send(
+      'app-update:error',
+      `업데이트를 설치하지 못했어요: ${e instanceof Error ? e.message : String(e)}`
+    )
+    return false
+  }
+}
+
 export function registerAppUpdaterIpc(): void {
   autoUpdater.on('checking-for-update', () => send('app-update:checking'))
   autoUpdater.on('update-available', (info) => send('app-update:available', info))
@@ -132,6 +198,8 @@ export function registerAppUpdaterIpc(): void {
       })
     }
     send('app-update:downloaded', info)
+    // 진행 중인 다운로드가 있으면 끝난 뒤에, 없으면 바로 재시작한다.
+    requestRestart('app-update', installDownloadedUpdate)
   })
 
   ipcMain.handle('app:version', () => app.getVersion())
@@ -152,22 +220,5 @@ export function registerAppUpdaterIpc(): void {
     } catch (e) {
       return { ok: false as const, error: String((e as Error).message ?? e) }
     }
-  })
-
-  // ad-hoc 서명 환경에선 Squirrel 자동 설치가 검증 실패하므로,
-  // 외부 셸 스크립트가 앱 종료 후 /Applications/Dovvn.app을 새 버전으로 덮어쓰고 재실행한다.
-  ipcMain.handle('app-update:quit-and-install', () => {
-    if (!downloadedFile) {
-      autoUpdater.quitAndInstall()
-      return
-    }
-    const newAppPath = prepareNewApp(downloadedFile)
-    if (!newAppPath) {
-      send('app-update:error', '업데이트 파일을 준비하지 못했어요. 잠시 후 다시 시도해주세요.')
-      return
-    }
-    const pendingDir = path.dirname(downloadedFile)
-    runReplaceScript(newAppPath, pendingDir)
-    setTimeout(() => app.quit(), 300)
   })
 }
