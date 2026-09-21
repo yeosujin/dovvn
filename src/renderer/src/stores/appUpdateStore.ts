@@ -54,8 +54,8 @@ export const useAppUpdateStore = create<AppUpdateState>((set, get) => ({
         if (get().phase === 'downloaded') return
         set({ phase: 'idle', nextVersion: null, message: null })
       }),
+      // downloaded 상태에서 오는 오류는 자동 설치가 시작되지 못했다는 뜻이므로 그대로 반영한다.
       window.api.onAppUpdateError((msg) => {
-        if (get().phase === 'downloaded') return
         set({ phase: 'error', message: msg })
       }),
       window.api.onAppUpdateProgress((p) => {
