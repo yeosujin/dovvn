@@ -1,8 +1,10 @@
-import { BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import { requestRestart } from '../restart'
 import { runYtDlpOnce } from './runner'
 
 const VERSION_TIMEOUT_MS = 30_000
 const UPDATE_TIMEOUT_MS = 180_000
+const RESTART_DELAY_MS = 1_500
 
 function broadcast(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -27,10 +29,29 @@ async function tryGetVersion(): Promise<string> {
   }
 }
 
+type RestartMode = 'now' | 'deferred' | 'none'
+
+// 새 yt-dlp를 쓰려면 앱을 재시작해야 한다. 진행 중인 다운로드가 있으면 끝난 뒤에 재시작한다.
+function restartToApplyUpdate(): RestartMode {
+  if (!app.isPackaged) {
+    console.log('[updater] 개발 모드라 yt-dlp 업데이트 후 재시작을 건너뜁니다')
+    return 'none'
+  }
+  return requestRestart('ytdlp-update', () => {
+    // 렌더러가 결과 메시지를 표시할 시간을 준다.
+    setTimeout(() => {
+      app.relaunch()
+      app.exit(0)
+    }, RESTART_DELAY_MS)
+    return true
+  })
+}
+
 export async function update(): Promise<{
   beforeVersion: string
   afterVersion: string
   log: string
+  restart: RestartMode
 }> {
   broadcast('ytdlp:update:log', '업데이트 확인 중...')
   const before = await tryGetVersion()
@@ -47,7 +68,14 @@ export async function update(): Promise<{
   }
   if (code !== 0) throw new Error(log || `yt-dlp -U exit ${code}`)
   const after = await tryGetVersion()
-  return { beforeVersion: before, afterVersion: after, log }
+  // 전후 버전을 모두 확인했고 서로 다를 때만 재시작한다. 이미 최신이면 재시작하지 않는다.
+  const updated = before !== '?' && after !== '?' && before !== after
+  return {
+    beforeVersion: before,
+    afterVersion: after,
+    log,
+    restart: updated ? restartToApplyUpdate() : 'none'
+  }
 }
 
 export function registerUpdaterIpc(): void {

@@ -193,12 +193,18 @@ export function SettingsPanel({ open, onClose }: Props): React.JSX.Element | nul
       if (r.afterVersion !== '?') setVersion(r.afterVersion)
       const b = r.beforeVersion
       const a = r.afterVersion
+      const restartNote =
+        r.restart === 'now'
+          ? ' — 잠시 후 재시작합니다'
+          : r.restart === 'deferred'
+            ? ' — 다운로드가 끝나면 재시작합니다'
+            : ''
       setUpdateMsg(
         a === '?'
           ? '업데이트 완료 (버전 확인 실패)'
           : b === a
             ? `이미 최신 버전입니다 (${a})`
-            : `${b} → ${a} 업데이트 완료`
+            : `${b} → ${a} 업데이트 완료${restartNote}`
       )
     } else {
       setUpdateMsg(`업데이트 실패: ${r.error}`)

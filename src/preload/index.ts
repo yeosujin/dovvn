@@ -93,7 +93,13 @@ export interface DownloadStartOptions {
 }
 
 export type UpdateResult =
-  | { ok: true; beforeVersion: string; afterVersion: string; log: string }
+  | {
+      ok: true
+      beforeVersion: string
+      afterVersion: string
+      log: string
+      restart: 'now' | 'deferred' | 'none'
+    }
   | { ok: false; error: string }
 
 export type VersionResult =
