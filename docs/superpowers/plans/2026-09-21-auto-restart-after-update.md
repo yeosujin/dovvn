@@ -36,7 +36,7 @@
   | `src/renderer/src/stores/appUpdateStore.ts`     | 0    | 0    |
 
 - **typecheck 기준선:** `npm run typecheck`는 현재 오류 없이 통과한다.
-- 스크래치 테스트 파일 경로(커밋하지 않음): `/private/tmp/claude-501/-Users-mz01-suujin-side-video-downloader/0860be5a-dbd5-42f8-b113-e58c5c821d56/scratchpad/restartScheduler.test.ts`
+- 스크래치 테스트 파일 경로(커밋하지 않음): `<scratchpad>/restartScheduler.test.ts`
 
 ## 스펙과 달라진 점
 
@@ -70,7 +70,7 @@
 **Files:**
 
 - Create: `src/main/restartScheduler.ts`
-- Test (커밋하지 않음): `/private/tmp/claude-501/-Users-mz01-suujin-side-video-downloader/0860be5a-dbd5-42f8-b113-e58c5c821d56/scratchpad/restartScheduler.test.ts`
+- Test (커밋하지 않음): `<scratchpad>/restartScheduler.test.ts`
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
@@ -79,7 +79,7 @@
 ```ts
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createRestartScheduler } from '/Users/mz01-suujin/side/video-downloader/src/main/restartScheduler.ts'
+import { createRestartScheduler } from '<repo>/src/main/restartScheduler.ts'
 
 function setup(initiallyBusy: boolean) {
   let busy = initiallyBusy
@@ -202,7 +202,7 @@ test('이미 실행된 뒤의 요청은 무시하고 now를 반환한다', () =>
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && node --experimental-strip-types --test /private/tmp/claude-501/-Users-mz01-suujin-side-video-downloader/0860be5a-dbd5-42f8-b113-e58c5c821d56/scratchpad/restartScheduler.test.ts
+node --experimental-strip-types --test <scratchpad>/restartScheduler.test.ts
 ```
 
 Expected: FAIL. `ERR_MODULE_NOT_FOUND`(`restartScheduler.ts`를 찾을 수 없음)로 종료 코드가 0이 아니다.
@@ -284,7 +284,7 @@ Expected: 8개 테스트가 모두 `ok`이고 `# pass 8`, `# fail 0`으로 종�
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && npm run typecheck:node && npx prettier --check src/main/restartScheduler.ts
+npm run typecheck:node && npx prettier --check src/main/restartScheduler.ts
 ```
 
 Expected: `tsc`가 오류 없이 끝나고 `All matched files use Prettier code style!`가 출력된다. Prettier가 경고하면 `npx prettier --write src/main/restartScheduler.ts`로 고친 뒤 Step 4를 다시 실행한다.
@@ -292,7 +292,7 @@ Expected: `tsc`가 오류 없이 끝나고 `All matched files use Prettier code 
 - [ ] **Step 6: 커밋**
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && git add src/main/restartScheduler.ts && git commit -m "$(cat <<'EOF'
+git add src/main/restartScheduler.ts && git commit -m "$(cat <<'EOF'
 feat: 재시작 스케줄러 추가
 
 다운로드 도중 앱이 종료되면 yt-dlp가 고아 프로세스로 남는다. 큐가
@@ -395,7 +395,7 @@ export const { requestRestart, isRestartPending } = scheduler
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && npm run typecheck:node && npx prettier --check src/main/restart.ts
+npm run typecheck:node && npx prettier --check src/main/restart.ts
 ```
 
 Expected: `tsc` 오류 없음, `All matched files use Prettier code style!`.
@@ -403,7 +403,7 @@ Expected: `tsc` 오류 없음, `All matched files use Prettier code style!`.
 - [ ] **Step 6: 커밋**
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && git add src/main/ytdlp/queue.ts src/main/restart.ts && git commit -m "$(cat <<'EOF'
+git add src/main/ytdlp/queue.ts src/main/restart.ts && git commit -m "$(cat <<'EOF'
 feat: 다운로드 큐 유휴 알림과 재시작 스케줄러 연결
 
 큐가 비는 시점을 스케줄러가 알 수 있게 onIdle/isIdle을 추가하고,
@@ -470,14 +470,14 @@ import { isRestartPending } from '../restart'
 
 - [ ] **Step 3: 타입체크**
 
-Run: `cd /Users/mz01-suujin/side/video-downloader && npm run typecheck`
+Run: `npm run typecheck`
 
 Expected: 오류 없이 종료.
 
 - [ ] **Step 4: 커밋**
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && git add src/main/ipc/download.ts && git commit -m "$(cat <<'EOF'
+git add src/main/ipc/download.ts && git commit -m "$(cat <<'EOF'
 feat: 재시작 대기 중 새 다운로드 차단
 
 재시작을 기다리는 동안 새 다운로드가 들어오면 재시작이 계속 밀리고,
@@ -649,14 +649,14 @@ setUpdateMsg(
 
 - [ ] **Step 5: 타입체크**
 
-Run: `cd /Users/mz01-suujin/side/video-downloader && npm run typecheck`
+Run: `npm run typecheck`
 
 Expected: `typecheck:node`와 `typecheck:web` 모두 오류 없이 종료. (`r.restart`는 `UpdateResult`의 `ok: true` 분기에서만 접근하므로 타입 오류가 없어야 한다.)
 
 - [ ] **Step 6: 커밋**
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && git add src/main/ytdlp/updater.ts src/preload/index.ts src/renderer/src/components/SettingsPanel.tsx && git commit -m "$(cat <<'EOF'
+git add src/main/ytdlp/updater.ts src/preload/index.ts src/renderer/src/components/SettingsPanel.tsx && git commit -m "$(cat <<'EOF'
 feat: yt-dlp 업데이트 후 자동 재시작
 
 yt-dlp를 업데이트한 뒤 앱을 재시작하지 않으면 오류가 발생한다.
@@ -942,7 +942,7 @@ window.api.onAppUpdateDownloaded((info) => {
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && grep -rn "appUpdateQuitAndInstall\|app-update:quit-and-install\|ArrowUpCircle" src; echo "grep exit=$?"; npm run typecheck
+grep -rn "appUpdateQuitAndInstall\|app-update:quit-and-install\|ArrowUpCircle" src; echo "grep exit=$?"; npm run typecheck
 ```
 
 Expected: `grep`은 아무것도 출력하지 않고 `grep exit=1`, 이어서 `typecheck:node`와 `typecheck:web`이 오류 없이 종료.
@@ -950,7 +950,7 @@ Expected: `grep`은 아무것도 출력하지 않고 `grep exit=1`, 이어서 `t
 - [ ] **Step 10: 커밋**
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && git add src/main/ipc/appUpdater.ts src/preload/index.ts src/renderer/src/stores/appUpdateStore.ts src/renderer/src/components/UpdatePill.tsx src/renderer/src/components/SettingsPanel.tsx && git commit -m "$(cat <<'EOF'
+git add src/main/ipc/appUpdater.ts src/preload/index.ts src/renderer/src/stores/appUpdateStore.ts src/renderer/src/components/UpdatePill.tsx src/renderer/src/components/SettingsPanel.tsx && git commit -m "$(cat <<'EOF'
 feat: 앱 업데이트 다운로드 완료 시 자동 재시작
 
 다운로드가 끝나도 사용자가 설치 버튼을 눌러야 재시작되던 것을, 다운로드가
@@ -971,7 +971,7 @@ EOF
 
 - [ ] **Step 1: 타입체크**
 
-Run: `cd /Users/mz01-suujin/side/video-downloader && npm run typecheck`
+Run: `npm run typecheck`
 
 Expected: 오류 없이 종료 (기준선과 같음).
 
@@ -980,7 +980,7 @@ Expected: 오류 없이 종료 (기준선과 같음).
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && npx eslint --no-cache -f json src/main/restartScheduler.ts src/main/restart.ts src/main/ytdlp/queue.ts src/main/ytdlp/updater.ts src/main/ipc/appUpdater.ts src/main/ipc/download.ts src/preload/index.ts src/renderer/src/components/UpdatePill.tsx src/renderer/src/components/SettingsPanel.tsx src/renderer/src/stores/appUpdateStore.ts 2>/dev/null | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const f of r){console.log(f.filePath.replace(process.cwd()+'/',''),'errors='+f.errorCount,'warnings='+f.warningCount)}"
+npx eslint --no-cache -f json src/main/restartScheduler.ts src/main/restart.ts src/main/ytdlp/queue.ts src/main/ytdlp/updater.ts src/main/ipc/appUpdater.ts src/main/ipc/download.ts src/preload/index.ts src/renderer/src/components/UpdatePill.tsx src/renderer/src/components/SettingsPanel.tsx src/renderer/src/stores/appUpdateStore.ts 2>/dev/null | node -e "const r=JSON.parse(require('fs').readFileSync(0,'utf8'));for(const f of r){console.log(f.filePath.replace(process.cwd()+'/',''),'errors='+f.errorCount,'warnings='+f.warningCount)}"
 ```
 
 Expected (기준선 이하):
@@ -1005,19 +1005,19 @@ src/renderer/src/stores/appUpdateStore.ts errors=0 warnings=0
 Run:
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && npx prettier --check src/main/restartScheduler.ts src/main/restart.ts docs/superpowers/plans/2026-09-21-auto-restart-after-update.md && node --experimental-strip-types --test /private/tmp/claude-501/-Users-mz01-suujin-side-video-downloader/0860be5a-dbd5-42f8-b113-e58c5c821d56/scratchpad/restartScheduler.test.ts
+npx prettier --check src/main/restartScheduler.ts src/main/restart.ts docs/superpowers/plans/2026-09-21-auto-restart-after-update.md && node --experimental-strip-types --test <scratchpad>/restartScheduler.test.ts
 ```
 
 Expected: `All matched files use Prettier code style!` 뒤에 `# pass 8`, `# fail 0`.
 
 - [ ] **Step 4: 패키징 빌드**
 
-Run: `cd /Users/mz01-suujin/side/video-downloader && npm run build:unpack`
+Run: `npm run build:unpack`
 
 Expected: `typecheck` → `electron-vite build` → `electron-builder --dir`가 오류 없이 끝나고 `dist/mac-arm64/Dovvn.app`이 생성된다. (`dist`는 gitignore 대상이다.) 확인:
 
 ```bash
-ls -d /Users/mz01-suujin/side/video-downloader/dist/mac-arm64/Dovvn.app
+ls -d <repo>/dist/mac-arm64/Dovvn.app
 ```
 
 - [ ] **Step 5: 테스트용으로 오래된 yt-dlp를 번들에 넣기**
@@ -1025,7 +1025,7 @@ ls -d /Users/mz01-suujin/side/video-downloader/dist/mac-arm64/Dovvn.app
 버전이 바뀌어야 재시작이 일어나므로, 패키징된 앱 안의 yt-dlp를 오래된 릴리즈로 바꾼다. 저장소의 `resources/bin`은 건드리지 않고 `dist` 안의 복사본만 바꾼다.
 
 ```bash
-cd /Users/mz01-suujin/side/video-downloader && APP_BIN=dist/mac-arm64/Dovvn.app/Contents/Resources/bin && OLD_TAG=$(gh release list -R yt-dlp/yt-dlp --limit 40 --json tagName -q '.[-1].tagName') && echo "old tag: $OLD_TAG" && gh release download "$OLD_TAG" -R yt-dlp/yt-dlp -p yt-dlp_macos -O "$APP_BIN/yt-dlp" --clobber && chmod +x "$APP_BIN/yt-dlp" && xattr -c "$APP_BIN/yt-dlp" && "$APP_BIN/yt-dlp" --version
+APP_BIN=dist/mac-arm64/Dovvn.app/Contents/Resources/bin && OLD_TAG=$(gh release list -R yt-dlp/yt-dlp --limit 40 --json tagName -q '.[-1].tagName') && echo "old tag: $OLD_TAG" && gh release download "$OLD_TAG" -R yt-dlp/yt-dlp -p yt-dlp_macos -O "$APP_BIN/yt-dlp" --clobber && chmod +x "$APP_BIN/yt-dlp" && xattr -c "$APP_BIN/yt-dlp" && "$APP_BIN/yt-dlp" --version
 ```
 
 Expected: 출력된 버전이 `2026.03.17`(현재 `resources/bin`의 버전)보다 오래된 값이다.
@@ -1055,7 +1055,7 @@ Expected: 출력된 버전이 `2026.03.17`(현재 `resources/bin`의 버전)보�
 
 - [ ] **Step 8: 작업 트리 확인**
 
-Run: `cd /Users/mz01-suujin/side/video-downloader && git status --short && git log --oneline main..HEAD`
+Run: `git status --short && git log --oneline main..HEAD`
 
 Expected: `git status`는 출력이 없다(스크래치 테스트는 저장소 밖에 있음). `git log`에는 스펙 커밋과 Task 1~5의 커밋이 순서대로 보인다.
 
