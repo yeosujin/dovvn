@@ -176,6 +176,10 @@ const api = {
   onAppUpdateDownloaded: (cb: (info: AppUpdateInfo) => void) =>
     subscribe<AppUpdateInfo>('app-update:downloaded', cb),
 
+  isRestartPending: () => ipcRenderer.invoke('restart:is-pending') as Promise<boolean>,
+  onRestartPendingChanged: (cb: (pending: boolean) => void) =>
+    subscribe<boolean>('restart:pending-changed', cb),
+
   onQueued: (cb: (p: QueuedPayload) => void) => subscribe<QueuedPayload>('download:queued', cb),
   onStarted: (cb: (p: StartedPayload) => void) => subscribe<StartedPayload>('download:started', cb),
   onProgress: (cb: (p: ProgressPayload) => void) => subscribe<ProgressPayload>('download:progress', cb),
