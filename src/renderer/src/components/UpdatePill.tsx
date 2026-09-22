@@ -33,12 +33,7 @@ export function UpdatePill(): React.JSX.Element | null {
     )
   }
 
-  if (
-    phase === 'checking' ||
-    phase === 'available' ||
-    phase === 'downloading' ||
-    phase === 'downloaded'
-  ) {
+  if (phase === 'checking' || phase === 'available' || phase === 'downloading') {
     return (
       <div className="no-drag inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-medium text-[color:var(--color-ghost-muted)] bg-[color:var(--color-ghost-accent-soft)]/40 border border-[color:var(--color-ghost-border)]">
         <RefreshCw size={11} className="animate-spin" />
