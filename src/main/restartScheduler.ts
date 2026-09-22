@@ -3,6 +3,7 @@ export type RestartReason = 'app-update' | 'ytdlp-update'
 export interface RestartSchedulerDeps {
   isBusy: () => boolean
   onIdle: (listener: () => void) => void
+  onPendingChange?: (pending: boolean) => void
 }
 
 interface QueuedRestart {
@@ -21,6 +22,14 @@ export function createRestartScheduler(deps: RestartSchedulerDeps): {
   // 큐가 빌 때까지 미뤄 둔 요청. run이 실행되면 null이 된다.
   let queued: QueuedRestart | null = null
 
+  const notifyPending = (value: boolean): void => {
+    try {
+      deps.onPendingChange?.(value)
+    } catch (e) {
+      console.error('[restart] 대기 상태 알림 실패', e)
+    }
+  }
+
   const execute = (req: QueuedRestart): void => {
     queued = null
     let started = false
@@ -29,7 +38,10 @@ export function createRestartScheduler(deps: RestartSchedulerDeps): {
     } catch (e) {
       console.error('[restart] 재시작 실행 실패', e)
     }
-    if (!started) pending = false
+    if (!started) {
+      pending = false
+      notifyPending(false)
+    }
   }
 
   deps.onIdle(() => {
@@ -47,6 +59,7 @@ export function createRestartScheduler(deps: RestartSchedulerDeps): {
         return 'deferred'
       }
       pending = true
+      notifyPending(true)
       const req = { reason, run }
       if (deps.isBusy()) {
         queued = req
