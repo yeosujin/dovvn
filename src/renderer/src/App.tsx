@@ -17,6 +17,7 @@ import { UpdatePill } from './components/UpdatePill'
 import { WhatsNewToast } from './components/WhatsNewToast'
 import type { ReleaseNotesEntry } from '../../preload/index'
 import { useAppUpdateStore } from './stores/appUpdateStore'
+import { useRestartStore } from './stores/restartStore'
 import { useDownloadEvents } from './hooks/useDownloadEvents'
 import { useStartDownload } from './hooks/useStartDownload'
 import { useSettingsStore } from './stores/settingsStore'
@@ -72,6 +73,7 @@ function App(): React.JSX.Element {
   const initAppUpdate = useAppUpdateStore((s) => s.init)
   const checkAppUpdate = useAppUpdateStore((s) => s.check)
   const currentVersion = useAppUpdateStore((s) => s.currentVersion)
+  const initRestart = useRestartStore((s) => s.init)
   const updateSettings = useSettingsStore((s) => s.update)
 
   const [whatsNew, setWhatsNew] = useState<ReleaseNotesEntry | null>(null)
@@ -96,8 +98,9 @@ function App(): React.JSX.Element {
     loadSettings()
     loadPresets()
     initAppUpdate()
+    initRestart()
     void checkAppUpdate(true)
-  }, [loadSettings, loadPresets, initAppUpdate, checkAppUpdate])
+  }, [loadSettings, loadPresets, initAppUpdate, initRestart, checkAppUpdate])
 
   useEffect(() => {
     // 윈도우 포커스 시 클립보드의 URL을 입력창에 자동 붙여넣기.

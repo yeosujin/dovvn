@@ -8,6 +8,7 @@ import { initPresets, registerPresetsIpc } from './ipc/presets'
 import { registerUpdaterIpc } from './ytdlp/updater'
 import { initSystemCa } from './ytdlp/system-ca'
 import { registerAppUpdaterIpc } from './ipc/appUpdater'
+import { registerRestartIpc } from './ipc/restart'
 
 // macOS 메뉴바/Dock에 표기되는 이름. app.whenReady 이전에 호출해야 반영됨.
 app.setName('Dovvn')
@@ -79,6 +80,7 @@ app.whenReady().then(() => {
   initPresets()
   registerSettingsIpc()
   registerPresetsIpc()
+  registerRestartIpc()
   registerUpdaterIpc()
   registerAppUpdaterIpc()
   registerDownloadIpc()
