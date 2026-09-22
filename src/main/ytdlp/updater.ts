@@ -5,6 +5,7 @@ import { runYtDlpOnce } from './runner'
 const VERSION_TIMEOUT_MS = 30_000
 const UPDATE_TIMEOUT_MS = 180_000
 const RESTART_DELAY_MS = 1_500
+const AUTO_UPDATE_INTERVAL_MS = 6 * 60 * 60 * 1000
 
 function broadcast(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
@@ -47,12 +48,26 @@ function restartToApplyUpdate(): RestartMode {
   })
 }
 
-export async function update(): Promise<{
+interface UpdateOutcome {
   beforeVersion: string
   afterVersion: string
   log: string
   restart: RestartMode
-}> {
+}
+
+let inFlightUpdate: Promise<UpdateOutcome> | null = null
+
+// 자동 주기 확인과 수동 확인(설정 패널)이 겹쳐도 yt-dlp -U가 같은 바이너리에
+// 두 번 실행되지 않도록, 진행 중이면 새 호출도 같은 결과를 기다리게 한다.
+export function update(): Promise<UpdateOutcome> {
+  if (inFlightUpdate) return inFlightUpdate
+  inFlightUpdate = runUpdate().finally(() => {
+    inFlightUpdate = null
+  })
+  return inFlightUpdate
+}
+
+async function runUpdate(): Promise<UpdateOutcome> {
   broadcast('ytdlp:update:log', '업데이트 확인 중...')
   const before = await tryGetVersion()
   const { code, stdout, stderr, timedOut } = await runYtDlpOnce(['-U'], {
@@ -83,6 +98,16 @@ export function registerUpdaterIpc(): void {
   getVersion().catch(() => {
     /* 워밍업 실패는 무시 — 이후 실제 호출에서 에러 처리 */
   })
+
+  // 앱 업데이트와 같은 주기(시작 시 + 6시간마다)로 yt-dlp도 자동 확인한다.
+  // 실패는 무시하고 다음 주기에 재시도한다.
+  const autoUpdate = (): void => {
+    update().catch((e) => {
+      console.warn('[updater] 자동 업데이트 확인 실패', e)
+    })
+  }
+  autoUpdate()
+  setInterval(autoUpdate, AUTO_UPDATE_INTERVAL_MS)
 
   ipcMain.handle('ytdlp:version', async () => {
     try {
