@@ -110,6 +110,14 @@ export function registerUpdaterIpc(): void {
   setInterval(autoUpdate, AUTO_UPDATE_INTERVAL_MS)
 
   ipcMain.handle('ytdlp:version', async () => {
+    // yt-dlp -U가 바이너리를 교체하는 도중에 실행하면 깨진 실행 파일을 그대로
+    // 실행하게 돼 파이썬 트레이스백이 노출될 수 있다. 진행 중이면 조회를 미룬다.
+    if (inFlightUpdate) {
+      return {
+        ok: false as const,
+        error: 'yt-dlp 업데이트 중이에요. 잠시 후 다시 확인해 주세요.'
+      }
+    }
     try {
       return { ok: true as const, version: await getVersion() }
     } catch (e) {
